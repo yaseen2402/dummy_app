@@ -1,0 +1,13 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: 
+    - 'build'
+    - '--build-arg'
+    - 'DT_API_URL=$_DT_API_URL'
+    - '--build-arg'
+    - 'DT_API_TOKEN=$_DT_API_TOKEN'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/dummy-app'
+    - '.'
+images:
+- 'gcr.io/$PROJECT_ID/dummy-app'
