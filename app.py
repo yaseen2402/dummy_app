@@ -55,21 +55,34 @@ def get_user_orders():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Query 1
-    cursor.execute("SELECT id, name FROM users")
-    users = cursor.fetchall()
-    
-    results = []
-    for user in users:
-        # N Queries (This loops 1,000 times, making 1,000 separate DB calls!)
-        # We also purposefully use f-strings instead of parameterized queries like a vibe coder
-        cursor.execute(f"SELECT product, amount FROM orders WHERE user_id = {user['id']}")
-        orders = cursor.fetchall()
-        
-        results.append({
-            "name": user['name'],
-            "orders": [{"product": o['product'], "amount": o['amount']} for o in orders]
-        })
+    # Optimized: Use a single JOIN query to fetch all users and their orders
+    cursor.execute("""
+        SELECT 
+            u.id as user_id, 
+            u.name as user_name, 
+            o.product as order_product, 
+            o.amount as order_amount
+        FROM users u
+        LEFT JOIN orders o ON u.id = o.user_id
+        ORDER BY u.id
+    """)
+    rows = cursor.fetchall()
+
+    user_orders_map = {}
+    for row in rows:
+        user_id = row['user_id']
+        if user_id not in user_orders_map:
+            user_orders_map[user_id] = {
+                "name": row['user_name'],
+                "orders": []
+            }
+        if row['order_product'] is not None: # Check if there are orders for the user
+            user_orders_map[user_id]["orders"].append({
+                "product": row['order_product'],
+                "amount": row['order_amount']
+            })
+
+    results = list(user_orders_map.values())
         
     conn.close()
     
